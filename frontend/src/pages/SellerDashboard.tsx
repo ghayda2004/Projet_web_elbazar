@@ -5,20 +5,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { BarChart3, Package, Star, DollarSign, Plus, Pencil, Trash2 } from 'lucide-react';
 import { sellerStats, sellerProducts } from '../data/mockData';
-import { CurrentPage } from '../../App';
+import type { CurrentPage } from '../../App';
 
 interface SellerDashboardProps {
+  userName?: string;
   onLogout: () => void;
   onNavigate: (page: CurrentPage) => void;
 }
 
-export default function SellerDashboard({ onLogout, onNavigate }: SellerDashboardProps) {
+export default function SellerDashboard({ userName, onLogout, onNavigate }: SellerDashboardProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
         isLoggedIn={true} 
         userRole="vendeur"
-        userName="Ma Boutique"
+        userName={userName || 'Ma Boutique'}
         onLogin={() => {}}
         onLogout={onLogout}
         onNavigate={onNavigate}

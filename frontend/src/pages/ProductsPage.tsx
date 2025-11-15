@@ -1,30 +1,118 @@
 import { Header } from '../components/Header';
 import { ProductCard } from '../components/ProductCard';
 import { products } from '../data/mockData';
-import { useState } from 'react';
-import { UserRole, CurrentPage } from '../App';
+import { useState, useEffect, useContext } from 'react';
+import type { UserRole, CurrentPage } from '../../App';
+import { CartContext } from '../../App';
+import { fetchProducts, ApiProduct } from '../services/api';
+import { Button } from '../components/ui/button';
+import { RefreshCw, Grid3x3, List, SlidersHorizontal, TrendingUp, Sparkles } from 'lucide-react';
 
 interface ProductsPageProps {
   isLoggedIn: boolean;
   userRole: UserRole;
-  onLogin: (role: UserRole) => void;
+  userName?: string;
+  onLogin: (role: UserRole, username?: string) => void;
   onLogout: () => void;
   onNavigate: (page: CurrentPage) => void;
 }
 
-export default function ProductsPage({ isLoggedIn, userRole, onLogin, onLogout, onNavigate }: ProductsPageProps) {
+export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, onLogout, onNavigate }: ProductsPageProps) {
   const [selectedCategory] = useState('all');
+  // useState hook - manages component state
+  const [apiProducts, setApiProducts] = useState<ApiProduct[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [useApiData, setUseApiData] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'rating'>('default');
+  const [showFilters, setShowFilters] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // useContext hook - accesses cart context
+  const { addToCart } = useContext(CartContext);
 
-  const filteredProducts = selectedCategory === 'all' 
+  // useEffect hook - handles side effects (API calls)
+  useEffect(() => {
+    if (useApiData) {
+      loadProducts();
+    }
+  }, [useApiData]);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchProducts();
+      setApiProducts(data);
+    } catch (err) {
+      setError('Échec du chargement des produits depuis l\'API');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Button functionality - toggle between mock and API data with animation
+  const toggleDataSource = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setUseApiData(!useApiData);
+      setRefreshing(false);
+    }, 500);
+  };
+  
+  // Button functionality - toggle view mode
+  const toggleViewMode = () => {
+    setViewMode(viewMode === 'grid' ? 'list' : 'grid');
+  };
+  
+  // Button functionality - toggle filters panel
+  const toggleFilters = () => {
+    setShowFilters(!showFilters);
+  };
+  
+  // Button functionality - sort products
+  const handleSort = (type: typeof sortBy) => {
+    setSortBy(type);
+  };
+
+  const handleAddToCart = (product: any) => {
+    addToCart({
+      id: product.id,
+      name: product.name || product.title,
+      price: product.price,
+      image: product.image,
+    });
+  };
+
+  let filteredProducts = selectedCategory === 'all' 
     ? products 
     : products.filter(p => p.categoryId === selectedCategory);
+  
+  // Apply sorting
+  const sortProducts = (productList: any[]) => {
+    const sorted = [...productList];
+    switch (sortBy) {
+      case 'price-asc':
+        return sorted.sort((a, b) => a.price - b.price);
+      case 'price-desc':
+        return sorted.sort((a, b) => b.price - a.price);
+      case 'rating':
+        return sorted.sort((a, b) => (b.rating?.rate || b.rating) - (a.rating?.rate || a.rating));
+      default:
+        return sorted;
+    }
+  };
+  
+  const displayProducts = useApiData ? sortProducts(apiProducts) : sortProducts(filteredProducts);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
         isLoggedIn={isLoggedIn} 
         userRole={userRole}
-        userName="John Buyer"
+        userName={userName}
         showCart={true}
         onLogin={onLogin}
         onLogout={onLogout}
@@ -32,22 +120,159 @@ export default function ProductsPage({ isLoggedIn, userRole, onLogin, onLogout, 
       />
       
       <section className="max-w-7xl mx-auto px-6 py-8">
-        <h1 className="text-gray-900 mb-8">Tous les produits</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              name={product.name}
-              price={product.price}
-              rating={product.rating}
-              category={product.category}
-              seller={product.seller}
-              discount={product.discount}
-              emoji={product.emoji}
-            />
-          ))}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-gray-900 flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-orange-500" />
+            Tous les produits
+            <span className="text-sm text-gray-500 font-normal">
+              ({displayProducts.length} articles)
+            </span>
+          </h1>
+          
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={toggleViewMode}
+              variant="outline"
+              size="sm"
+              className={`gap-2 transition-all duration-300 ${
+                viewMode === 'grid' ? 'bg-slate-100' : ''
+              }`}
+              title={viewMode === 'grid' ? 'Vue liste' : 'Vue grille'}
+            >
+              {viewMode === 'grid' ? (
+                <Grid3x3 className="w-4 h-4" />
+              ) : (
+                <List className="w-4 h-4" />
+              )}
+            </Button>
+            
+            <Button 
+              onClick={toggleFilters}
+              variant="outline"
+              size="sm"
+              className={`gap-2 transition-all duration-300 ${
+                showFilters ? 'bg-blue-100 text-blue-700 border-blue-300' : ''
+              }`}
+            >
+              <SlidersHorizontal className={`w-4 h-4 transition-transform duration-300 ${
+                showFilters ? 'rotate-180' : ''
+              }`} />
+              Filtres
+            </Button>
+            
+            <Button 
+              onClick={toggleDataSource}
+              variant="outline"
+              size="sm"
+              className={`gap-2 transition-all duration-300 ${
+                refreshing ? 'animate-pulse' : ''
+              } ${useApiData ? 'bg-green-100 text-green-700 border-green-300' : ''}`}
+            >
+              <RefreshCw className={`w-4 h-4 transition-transform duration-500 ${
+                refreshing ? 'animate-spin' : ''
+              }`} />
+              {useApiData ? 'Données API' : 'Données locales'}
+            </Button>
+          </div>
         </div>
+
+        <div className={`mb-6 transition-all duration-300 ${
+          showFilters ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden'
+        }`}>
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                <TrendingUp className="w-4 h-4" />
+                Trier par:
+              </span>
+              <Button
+                onClick={() => handleSort('default')}
+                variant="outline"
+                size="sm"
+                className={`transition-all duration-300 ${
+                  sortBy === 'default' 
+                    ? 'bg-slate-700 text-white border-slate-700 scale-105' 
+                    : 'hover:scale-105'
+                }`}
+              >
+                Par défaut
+              </Button>
+              <Button
+                onClick={() => handleSort('price-asc')}
+                variant="outline"
+                size="sm"
+                className={`transition-all duration-300 ${
+                  sortBy === 'price-asc' 
+                    ? 'bg-slate-700 text-white border-slate-700 scale-105' 
+                    : 'hover:scale-105'
+                }`}
+              >
+                Prix croissant
+              </Button>
+              <Button
+                onClick={() => handleSort('price-desc')}
+                variant="outline"
+                size="sm"
+                className={`transition-all duration-300 ${
+                  sortBy === 'price-desc' 
+                    ? 'bg-slate-700 text-white border-slate-700 scale-105' 
+                    : 'hover:scale-105'
+                }`}
+              >
+                Prix décroissant
+              </Button>
+              <Button
+                onClick={() => handleSort('rating')}
+                variant="outline"
+                size="sm"
+                className={`transition-all duration-300 ${
+                  sortBy === 'rating' 
+                    ? 'bg-slate-700 text-white border-slate-700 scale-105' 
+                    : 'hover:scale-105'
+                }`}
+              >
+                Meilleures notes
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 animate-pulse">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="flex flex-col items-center gap-3">
+              <RefreshCw className="w-8 h-8 text-slate-700 animate-spin" />
+              <div className="text-gray-500 animate-pulse">Chargement des produits...</div>
+            </div>
+          </div>
+        ) : (
+          <div className={`grid gap-6 transition-all duration-300 ${
+            viewMode === 'grid' 
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+              : 'grid-cols-1 md:grid-cols-2'
+          }`}>
+            {displayProducts.map((product: any) => (
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                name={product.title || product.name}
+                price={product.price}
+                rating={product.rating?.rate || product.rating}
+                category={product.category}
+                seller={product.seller || "API Store"}
+                discount={product.discount}
+                emoji={product.emoji}
+                image={product.image}
+                onAddToCart={() => handleAddToCart(product)}
+              />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

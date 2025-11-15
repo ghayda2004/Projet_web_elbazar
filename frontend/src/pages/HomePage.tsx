@@ -3,17 +3,18 @@ import { CategoryFilter } from '../components/CategoryFilter';
 import { SellerCard } from '../components/SellerCard';
 import { sellers } from '../data/mockData';
 import { useState } from 'react';
-import { UserRole, CurrentPage } from '.../App.tsx';
+import type { UserRole, CurrentPage } from '../../App';
 
 interface HomePageProps {
   isLoggedIn: boolean;
   userRole: UserRole;
-  onLogin: (role: UserRole) => void;
+  userName?: string;
+  onLogin: (role: UserRole, username?: string) => void;
   onLogout: () => void;
   onNavigate: (page: CurrentPage) => void;
 }
 
-export default function HomePage({ isLoggedIn, userRole, onLogin, onLogout, onNavigate }: HomePageProps) {
+export default function HomePage({ isLoggedIn, userRole, userName, onLogin, onLogout, onNavigate }: HomePageProps) {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   return (
@@ -21,6 +22,7 @@ export default function HomePage({ isLoggedIn, userRole, onLogin, onLogout, onNa
       <Header 
         isLoggedIn={isLoggedIn} 
         userRole={userRole}
+        userName={userName}
         onLogin={onLogin}
         onLogout={onLogout}
         onNavigate={onNavigate}
