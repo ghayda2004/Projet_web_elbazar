@@ -1,13 +1,12 @@
 import { Header } from '../components/Header';
 import { ProductCard } from '../components/ProductCard';
-import { products } from '../data/mockData';
+import { CategoryFilter } from '../components/CategoryFilter';
 import { useState, useEffect, useContext } from 'react';
 import type { UserRole, CurrentPage } from '../../App';
 import { CartContext } from '../../App';
-import { fetchProducts, ApiProduct } from '../services/api';
 import { getProducts } from '../services/productService';
 import { Button } from '../components/ui/button';
-import { RefreshCw, Grid3x3, List, SlidersHorizontal, TrendingUp, Sparkles, Database } from 'lucide-react';
+import { RefreshCw, Grid3x3, List, SlidersHorizontal, TrendingUp, Sparkles } from 'lucide-react';
 
 interface ProductsPageProps {
   isLoggedIn: boolean;
@@ -19,14 +18,11 @@ interface ProductsPageProps {
 }
 
 export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, onLogout, onNavigate }: ProductsPageProps) {
-  const [selectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   // useState hook - manages component state
-  const [apiProducts, setApiProducts] = useState<ApiProduct[]>([]);
   const [backendProducts, setBackendProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useApiData, setUseApiData] = useState(false);
-  const [useBackendData, setUseBackendData] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'rating'>('default');
   const [showFilters, setShowFilters] = useState(false);
@@ -37,26 +33,8 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
 
   // useEffect hook - handles side effects (API calls)
   useEffect(() => {
-    if (useApiData) {
-      loadProducts();
-    } else if (useBackendData) {
-      loadBackendProducts();
-    }
-  }, [useApiData, useBackendData]);
-
-  const loadProducts = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchProducts();
-      setApiProducts(data);
-    } catch (err) {
-      setError('Échec du chargement des produits depuis l\'API');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadBackendProducts();
+  }, []);
 
   const loadBackendProducts = async () => {
     setLoading(true);
@@ -72,26 +50,6 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
     }
   };
 
-  // Button functionality - toggle between mock and API data with animation
-  const toggleDataSource = () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setUseApiData(!useApiData);
-      if (useApiData) setUseBackendData(false);
-      setRefreshing(false);
-    }, 500);
-  };
-
-  // Button functionality - toggle backend data
-  const toggleBackendData = () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setUseBackendData(!useBackendData);
-      if (useBackendData) setUseApiData(false);
-      setRefreshing(false);
-    }, 500);
-  };
-  
   // Button functionality - toggle view mode
   const toggleViewMode = () => {
     setViewMode(viewMode === 'grid' ? 'list' : 'grid');
@@ -116,9 +74,11 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
     });
   };
 
-  let filteredProducts = selectedCategory === 'all' 
-    ? products 
-    : products.filter(p => p.categoryId === selectedCategory);
+  // Apply category filtering
+  const filterByCategory = (productList: any[]) => {
+    if (selectedCategory === 'all') return productList;
+    return productList.filter(p => p.categoryId === selectedCategory);
+  };
   
   // Apply sorting
   const sortProducts = (productList: any[]) => {
@@ -135,11 +95,13 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
     }
   };
   
-  const displayProducts = useBackendData 
-    ? sortProducts(backendProducts)
-    : useApiData 
-      ? sortProducts(apiProducts) 
-      : sortProducts(filteredProducts);
+  const getDisplayProducts = () => {
+    let products = backendProducts;
+    products = filterByCategory(products);
+    return sortProducts(products);
+  };
+
+  const displayProducts = getDisplayProducts();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -153,6 +115,13 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
         onNavigate={onNavigate}
       />
       
+      <section className="max-w-7xl mx-auto px-6">
+        <CategoryFilter
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
+      </section>
+
       <section className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-gray-900 flex items-center gap-2">
@@ -192,34 +161,6 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
                 showFilters ? 'rotate-180' : ''
               }`} />
               Filtres
-            </Button>
-            
-            <Button 
-              onClick={toggleBackendData}
-              variant="outline"
-              size="sm"
-              className={`gap-2 transition-all duration-300 ${
-                refreshing ? 'animate-pulse' : ''
-              } ${useBackendData ? 'bg-blue-100 text-blue-700 border-blue-300' : ''}`}
-            >
-              <Database className={`w-4 h-4 transition-transform duration-500 ${
-                refreshing ? 'animate-spin' : ''
-              }`} />
-              {useBackendData ? 'Backend DB' : 'Backend'}
-            </Button>
-            
-            <Button 
-              onClick={toggleDataSource}
-              variant="outline"
-              size="sm"
-              className={`gap-2 transition-all duration-300 ${
-                refreshing ? 'animate-pulse' : ''
-              } ${useApiData ? 'bg-green-100 text-green-700 border-green-300' : ''}`}
-            >
-              <RefreshCw className={`w-4 h-4 transition-transform duration-500 ${
-                refreshing ? 'animate-spin' : ''
-              }`} />
-              {useApiData ? 'Données API' : 'Fake Store API'}
             </Button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import { useState, createContext, useCallback, useMemo } from 'react';
 import HomePage from './src/pages/HomePage';
 import ProductsPage from './src/pages/ProductsPage';
-import SellerDashboard from './src/pages/SellerDashboard'; 
+import SellerDashboard from './src/pages/SellerDashboard';
 
 export type UserRole = 'client' | 'vendeur' | null;
 export type CurrentPage = 'home' | 'products' | 'seller-dashboard';
@@ -61,7 +61,6 @@ function App() {
     setCurrentPage(page);
   };
 
-  // useCallback hook - memoizes the addToCart function
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'>) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
@@ -84,7 +83,6 @@ function App() {
     setCart([]);
   }, []);
 
-  // useMemo hook - memoizes computed values
   const cartTotal = useMemo(() => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   }, [cart]);

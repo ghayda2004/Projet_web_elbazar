@@ -2,13 +2,14 @@ import { Store, Star } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface SellerCardProps {
+  sellerId: number;
   name: string;
   rating: number;
   productCount: number;
   imageUrl?: string;
 }
 
-export function SellerCard({ name, rating, productCount }: SellerCardProps) {
+export function SellerCard({ sellerId, name, rating, productCount }: SellerCardProps) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
       <div className="flex justify-center mb-4">

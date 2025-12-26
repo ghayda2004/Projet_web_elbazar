@@ -8,6 +8,7 @@ export interface User {
   phone?: string;
   storeName?: string;
   address?: string;
+  storePhoto?: string;
 }
 
 export interface AuthResponse {
@@ -25,6 +26,7 @@ export const register = async (data: {
   phone?: string;
   storeName?: string;
   address?: string;
+  storePhoto?: string;
 }): Promise<AuthResponse> => {
   const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',

@@ -8,7 +8,7 @@ dotenv.config();
 // Register a new user
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, storeName, address } = req.body;
+    const { name, email, password, role, phone, storeName, address, storePhoto } = req.body;
 
     // Validate required fields
     if (!name || !email || !password || !role) {
@@ -34,6 +34,7 @@ export const register = async (req, res) => {
       phone,
       storeName: role === 'vendeur' ? storeName : undefined,
       address: role === 'vendeur' ? address : undefined,
+      storePhoto: role === 'vendeur' ? storePhoto : undefined,
       createdAt: new Date(),
     };
 
@@ -73,12 +74,15 @@ export const login = async (req, res) => {
     // Find user
     const user = db.users.find(u => u.email === email);
     if (!user) {
+      console.log('Login failed: User not found with email:', email);
+      console.log('Available users:', db.users.map(u => u.email));
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      console.log('Login failed: Invalid password for user:', email);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
@@ -146,6 +150,38 @@ export const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get all sellers
+export const getSellers = async (req, res) => {
+  try {
+    const sellers = db.users
+      .filter(user => user.role === 'vendeur')
+      .map(({ password, ...seller }) => seller);
+    
+    res.json(sellers);
+  } catch (error) {
+    console.error('Get sellers error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get seller by ID
+export const getSellerById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const seller = db.users.find(user => user.id === parseInt(id) && user.role === 'vendeur');
+    
+    if (!seller) {
+      return res.status(404).json({ message: 'Seller not found' });
+    }
+    
+    const { password, ...sellerWithoutPassword } = seller;
+    res.json(sellerWithoutPassword);
+  } catch (error) {
+    console.error('Get seller by ID error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

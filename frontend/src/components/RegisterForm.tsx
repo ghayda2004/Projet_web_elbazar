@@ -18,7 +18,9 @@ export default function RegisterForm({ onRegister, onNavigate }: RegisterFormPro
     phone: '',
     storeName: '',
     address: '',
+    storePhoto: '',
   });
+  const [photoUploaded, setPhotoUploaded] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,6 +30,18 @@ export default function RegisterForm({ onRegister, onNavigate }: RegisterFormPro
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, storePhoto: reader.result as string }));
+        setPhotoUploaded(true);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -54,6 +68,7 @@ export default function RegisterForm({ onRegister, onNavigate }: RegisterFormPro
 
     setIsSubmitting(true);
 
+    try {
       const response = await registerAPI({
         name: formData.name,
         email: formData.email,
@@ -62,11 +77,15 @@ export default function RegisterForm({ onRegister, onNavigate }: RegisterFormPro
         phone: formData.phone,
         storeName: role === 'seller' ? formData.storeName : undefined,
         address: role === 'seller' ? formData.address : undefined,
+        storePhoto: role === 'seller' ? formData.storePhoto : undefined,
       });
 
       onRegister(response.user.role as UserRole, response.user);
 
       onNavigate('home');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      setErrors({ submit: error.message || 'Erreur lors de l\'inscription' });
     } finally {
       setIsSubmitting(false);
     }
@@ -186,6 +205,22 @@ export default function RegisterForm({ onRegister, onNavigate }: RegisterFormPro
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-slate-600 focus:border-transparent"
                 placeholder="Rue, Ville, Gouvernorat"
               />
+            </div>
+
+            <div>
+              <label htmlFor="storePhoto" className="block text-sm font-medium text-gray-700 mb-1">
+                Logo de la boutique (PNG/JPG)
+              </label>
+              <input
+                type="file"
+                id="storePhoto"
+                accept="image/png,image/jpeg,image/jpg"
+                onChange={handleFileChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-slate-600 focus:border-transparent"
+              />
+              {photoUploaded && (
+                <p className="text-green-600 text-xs mt-1">✓ Photo téléchargée avec succès</p>
+              )}
             </div>
           </>
         )}

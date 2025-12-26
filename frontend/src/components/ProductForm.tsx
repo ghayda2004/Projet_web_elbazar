@@ -17,13 +17,14 @@ export function ProductForm({ open, onClose, onSuccess, product }: ProductFormPr
     price: product?.price || '',
     category: product?.category || '',
     categoryId: product?.categoryId || 'furniture',
-    emoji: product?.emoji || '📦',
     stock: product?.stock || '',
     description: product?.description || '',
     discount: product?.discount || '',
+    image: product?.image || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [imageUploaded, setImageUploaded] = useState(!!product?.image);
 
   const categories = [
     { id: 'furniture', label: 'Meubles' },
@@ -73,6 +74,18 @@ export function ProductForm({ open, onClose, onSuccess, product }: ProductFormPr
       if (category) {
         setFormData(prev => ({ ...prev, category: category.label }));
       }
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, image: reader.result as string }));
+        setImageUploaded(true);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -128,9 +141,9 @@ export function ProductForm({ open, onClose, onSuccess, product }: ProductFormPr
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Catégorie
               </label>
               <select
@@ -138,7 +151,7 @@ export function ProductForm({ open, onClose, onSuccess, product }: ProductFormPr
                 value={formData.categoryId}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-slate-600 focus:border-transparent"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-slate-600 focus:border-transparent"
               >
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -147,16 +160,16 @@ export function ProductForm({ open, onClose, onSuccess, product }: ProductFormPr
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Emoji
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Image du produit
               </label>
-              <Input
-                name="emoji"
-                value={formData.emoji}
-                onChange={handleChange}
-                placeholder="🛋️"
-                maxLength={2}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                onChange={handleImageUpload}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-slate-600 focus:border-transparent"
               />
+              {imageUploaded && <p className="text-green-600 text-xs mt-1">✓ Image téléchargée</p>}
             </div>
           </div>
 

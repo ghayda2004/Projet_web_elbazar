@@ -39,7 +39,7 @@ export const getProduct = (req, res) => {
 // Create product (seller only)
 export const createProduct = (req, res) => {
   try {
-    const { name, price, category, categoryId, emoji, stock, description, discount } = req.body;
+    const { name, price, category, categoryId, image, stock, description, discount } = req.body;
 
     // Validate required fields
     if (!name || !price || !category || !categoryId) {
@@ -61,7 +61,7 @@ export const createProduct = (req, res) => {
       categoryId,
       seller: seller.storeName || seller.name,
       sellerId: seller.id,
-      emoji: emoji || '📦',
+      image: image || '',
       stock: parseInt(stock) || 0,
       description: description || '',
       discount: discount ? parseInt(discount) : undefined,
@@ -84,7 +84,7 @@ export const createProduct = (req, res) => {
 export const updateProduct = (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, category, categoryId, emoji, stock, description, discount } = req.body;
+    const { name, price, category, categoryId, image, stock, description, discount } = req.body;
 
     const productIndex = db.products.findIndex(p => p.id === id);
     if (productIndex === -1) {
@@ -101,7 +101,7 @@ export const updateProduct = (req, res) => {
     if (price) db.products[productIndex].price = parseFloat(price);
     if (category) db.products[productIndex].category = category;
     if (categoryId) db.products[productIndex].categoryId = categoryId;
-    if (emoji) db.products[productIndex].emoji = emoji;
+    if (image) db.products[productIndex].image = image;
     if (stock !== undefined) db.products[productIndex].stock = parseInt(stock);
     if (description) db.products[productIndex].description = description;
     if (discount !== undefined) db.products[productIndex].discount = parseInt(discount);

@@ -8,6 +8,7 @@ import { CartContext } from '../../App';
 import { Badge } from './ui/badge';
 import { login as loginAPI } from '../services/authService';
 import { createOrder } from '../services/orderService';
+import RegisterForm from './RegisterForm';
 
 interface HeaderProps {
   isLoggedIn: boolean;
@@ -17,33 +18,20 @@ interface HeaderProps {
   onLogin: (role: UserRole, username?: string) => void;
   onLogout: () => void;
   onNavigate: (page: CurrentPage) => void;
+  onRefreshSellers?: () => void;
 }
 
-export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart = false, onLogin, onLogout, onNavigate }: HeaderProps) {
+export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart = false, onLogin, onLogout, onNavigate, onRefreshSellers }: HeaderProps) {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [cartDialogOpen, setCartDialogOpen] = useState(false);
-  const [loginStep, setLoginStep] = useState<'role' | 'credentials'>('role');
-  const [selectedRole, setSelectedRole] = useState<UserRole>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
   
   // useContext hook - access cart data
   const { cart, removeFromCart, clearCart, cartTotal, cartItemsCount } = useContext(CartContext);
-
-  const handleRoleSelect = (role: UserRole) => {
-    setSelectedRole(role);
-    setLoginStep('credentials');
-    setLoginError('');
-  };
-
-  const handleBackToRole = () => {
-    setLoginStep('role');
-    setEmail('');
-    setPassword('');
-    setLoginError('');
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,9 +62,15 @@ export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart
       onLogin(response.user.role as UserRole, response.user.name);
       
       setLoginDialogOpen(false);
-      setLoginStep('role');
       setEmail('');
       setPassword('');
+      
+      // Redirect based on user role
+      if (response.user.role === 'vendeur') {
+        onNavigate('seller-dashboard');
+      } else {
+        onNavigate('products');
+      }
     } catch (error: any) {
       setLoginError(error.message || 'Échec de la connexion');
     } finally {
@@ -89,11 +83,9 @@ export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart
     if (!open) {
       // Reset state when dialog closes
       setTimeout(() => {
-        setLoginStep('role');
         setEmail('');
         setPassword('');
         setLoginError('');
-        setSelectedRole(null);
       }, 300);
     }
   };
@@ -268,76 +260,32 @@ export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
-                {loginStep === 'role' ? (
-                  <>
-                    <DialogHeader>
-                      <DialogTitle>Choisissez votre profil</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <Button 
-                        variant="outline" 
-                        className="h-20 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:scale-105"
-                        onClick={() => handleRoleSelect('client')}
-                      >
-                        <div className="flex flex-col items-center gap-2">
-                          <ShoppingCart className="w-8 h-8 text-blue-600" />
-                          <span className="font-semibold">Client</span>
-                          <span className="text-xs text-gray-500">Acheter des produits</span>
-                        </div>
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="h-20 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 hover:scale-105"
-                        onClick={() => handleRoleSelect('vendeur')}
-                      >
-                        <div className="flex flex-col items-center gap-2">
-                          <Store className="w-8 h-8 text-purple-600" />
-                          <span className="font-semibold">Vendeur / Commerçant</span>
-                          <span className="text-xs text-gray-500">Gérer votre boutique</span>
-                        </div>
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <DialogHeader>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleBackToRole}
-                          className="p-1 h-8 w-8"
-                        >
-                          <ArrowLeft className="w-4 h-4" />
-                        </Button>
-                        <DialogTitle>
-                          Connexion - {selectedRole === 'client' ? 'Client' : 'Vendeur'}
-                        </DialogTitle>
-                      </div>
-                    </DialogHeader>
-                    <form onSubmit={handleLogin} className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          Email
-                        </label>
-                        <Input
-                          type="email"
-                          placeholder="exemple@email.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="transition-all duration-300 focus:ring-2 focus:ring-slate-700"
-                          disabled={isLoggingIn}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                          <Lock className="w-4 h-4" />
-                          Mot de passe
-                        </label>
-                        <Input
-                          type="password"
+                <DialogHeader>
+                  <DialogTitle>Connexion</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleLogin} className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Email
+                    </label>
+                    <Input
+                      type="email"
+                      placeholder="exemple@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="transition-all duration-300 focus:ring-2 focus:ring-slate-700"
+                      disabled={isLoggingIn}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <Lock className="w-4 h-4" />
+                      Mot de passe
+                    </label>
+                    <Input
+                      type="password"
                           placeholder="••••••••"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
@@ -371,15 +319,40 @@ export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart
                         )}
                       </Button>
 
-                      <p className="text-xs text-center text-gray-500">
-                        Pas encore de compte? <span className="text-blue-600 hover:underline cursor-pointer">S'inscrire</span>
-                      </p>
-                    </form>
-                  </>
-                )}
+                  <p className="text-xs text-center text-gray-500">
+                    Pas encore de compte? <span onClick={() => { setLoginDialogOpen(false); setRegisterDialogOpen(true); }} className="text-blue-600 hover:underline cursor-pointer">S'inscrire</span>
+                  </p>
+                </form>
               </DialogContent>
             </Dialog>
           )}
+
+          {/* Registration Dialog */}
+          <Dialog open={registerDialogOpen} onOpenChange={setRegisterDialogOpen}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto p-5">
+              <DialogHeader>
+                <DialogTitle className="text-xl">Créer un compte</DialogTitle>
+              </DialogHeader>
+              <RegisterForm 
+                onRegister={(userData) => {
+                  setRegisterDialogOpen(false);
+                  // Refresh sellers list if a seller was registered
+                  if (userData.role === 'vendeur' && onRefreshSellers) {
+                    onRefreshSellers();
+                  }
+                  // Auto-login the user after registration
+                  onLogin(userData.role as UserRole, userData.name);
+                  // Redirect based on user role
+                  if (userData.role === 'vendeur') {
+                    onNavigate('seller-dashboard');
+                  } else {
+                    onNavigate('products');
+                  }
+                }}
+                onNavigate={() => {}}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </header>
