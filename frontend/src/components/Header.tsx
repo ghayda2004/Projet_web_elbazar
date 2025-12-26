@@ -7,6 +7,7 @@ import type { UserRole, CurrentPage } from '../../App';
 import { CartContext } from '../../App';
 import { Badge } from './ui/badge';
 import { login as loginAPI } from '../services/authService';
+import { createOrder } from '../services/orderService';
 
 interface HeaderProps {
   isLoggedIn: boolean;
@@ -107,6 +108,36 @@ export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart
     }
   };
 
+  const handleCheckout = async () => {
+    if (cart.length === 0) {
+      alert('Votre panier est vide');
+      return;
+    }
+
+    if (!isLoggedIn) {
+      alert('Veuillez vous connecter pour passer commande');
+      setCartDialogOpen(false);
+      setLoginDialogOpen(true);
+      return;
+    }
+
+    try {
+      const items = cart.map(item => ({
+        productId: String(item.id),
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      }));
+
+      await createOrder(items);
+      clearCart();
+      setCartDialogOpen(false);
+      alert('Commande passée avec succès! 🎉');
+    } catch (error: any) {
+      alert(error.message || 'Erreur lors de la commande');
+    }
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -192,7 +223,10 @@ export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart
                             <Trash2 className="w-4 h-4" />
                             Vider
                           </Button>
-                          <Button className="flex-1 bg-slate-700 hover:bg-slate-800">
+                          <Button 
+                            className="flex-1 bg-slate-700 hover:bg-slate-800"
+                            onClick={handleCheckout}
+                          >
                             Commander
                           </Button>
                         </div>
