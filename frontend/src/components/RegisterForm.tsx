@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { UserRole } from '../App.tsx';
 import { register as registerAPI } from '../services/authService';
-import { register as registerAPI } from '../services/authService';
 
 interface RegisterFormProps {
   onRegister: (role: UserRole, data: any) => void;
@@ -67,12 +66,7 @@ export default function RegisterForm({ onRegister, onNavigate }: RegisterFormPro
 
       onRegister(response.user.role as UserRole, response.user);
 
-    } catch (err: any) {
-      setErrors({ submit: err.message || 'Erreur lors de l'inscription.' });
-
-
-    } catch (err) {
-      setErrors({ submit: 'Erreur lors de l’inscription.' });
+      onNavigate('home');
     } finally {
       setIsSubmitting(false);
     }
