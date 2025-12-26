@@ -1,6 +1,7 @@
 // components/RegisterForm.tsx
 import { useState } from 'react';
 import { UserRole } from '../App.tsx';
+import { register as registerAPI } from '../services/authService';
 
 interface RegisterFormProps {
   onRegister: (role: UserRole, data: any) => void;
@@ -54,20 +55,20 @@ export default function RegisterForm({ onRegister, onNavigate }: RegisterFormPro
     setIsSubmitting(true);
 
     try {
-      // Simuler appel API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Inscription:', { role, ...formData });
 
-      const userData = {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        storeName: role === 'seller' ? formData.storeName : undefined,
-        address: formData.address,
-      };
 
-      onRegister(role, userData);
-      onNavigate('home');
+
+
+
+
+
+
+
+
+
+
+
+
     } catch (err) {
       setErrors({ submit: 'Erreur lors de l’inscription.' });
     } finally {

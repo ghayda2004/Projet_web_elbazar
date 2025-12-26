@@ -2,22 +2,37 @@
 
 Ce dossier contient les services pour gérer les appels API et la logique métier.
 
-## Structure recommandée
+## Structure
 
+- `config.ts` - Configuration API et helpers
 - `authService.ts` - Gestion de l'authentification
 - `productService.ts` - Gestion des produits
-- `sellerService.ts` - Gestion des vendeurs
 - `orderService.ts` - Gestion des commandes
+- `contactService.ts` - Gestion du formulaire de contact
+- `api.ts` - Integration avec Fake Store API (optionnel)
 
-## Exemple d'utilisation
+## Services Implémentés
 
-```typescript
-// authService.ts
-export const login = async (email: string, password: string) => {
-  // Logique d'authentification
-};
+### authService.ts
+- `register()` - Inscription utilisateur
+- `login()` - Connexion utilisateur
+- `logout()` - Déconnexion
+- `getProfile()` - Récupérer le profil
+- `updateProfile()` - Mettre à jour le profil
 
-export const logout = async () => {
-  // Logique de déconnexion
-};
-```
+### productService.ts
+- `getProducts()` - Récupérer tous les produits
+- `getProduct()` - Récupérer un produit
+- `getSellerProducts()` - Produits du vendeur
+- `createProduct()` - Créer un produit
+- `updateProduct()` - Modifier un produit
+- `deleteProduct()` - Supprimer un produit
+
+### orderService.ts
+- `createOrder()` - Créer une commande
+- `getUserOrders()` - Commandes de l'utilisateur
+- `getSellerOrders()` - Commandes du vendeur
+- `updateOrderStatus()` - Modifier le statut
+
+### contactService.ts
+- `submitContact()` - Envoyer le formulaire de contact

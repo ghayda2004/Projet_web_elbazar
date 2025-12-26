@@ -6,6 +6,7 @@ import { useState, useContext } from 'react';
 import type { UserRole, CurrentPage } from '../../App';
 import { CartContext } from '../../App';
 import { Badge } from './ui/badge';
+import { login as loginAPI } from '../services/authService';
 
 interface HeaderProps {
   isLoggedIn: boolean;
@@ -43,7 +44,7 @@ export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart
     setLoginError('');
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     
@@ -63,16 +64,23 @@ export function Header({ isLoggedIn, userRole, userName = 'John Buyer', showCart
       return;
     }
     
-    // Simulate login with visual feedback
+    // Real login with backend API
     setIsLoggingIn(true);
-    setTimeout(() => {
-      onLogin(selectedRole!, email.split('@')[0]);
+    try {
+      const response = await loginAPI(email, password);
+      
+      // Call parent login handler with user data
+      onLogin(response.user.role as UserRole, response.user.name);
+      
       setLoginDialogOpen(false);
       setLoginStep('role');
       setEmail('');
       setPassword('');
+    } catch (error: any) {
+      setLoginError(error.message || 'Échec de la connexion');
+    } finally {
       setIsLoggingIn(false);
-    }, 800);
+    }
   };
 
   const handleDialogClose = (open: boolean) => {

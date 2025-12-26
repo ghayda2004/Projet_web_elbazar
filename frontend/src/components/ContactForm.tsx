@@ -1,5 +1,6 @@
 // components/ContactForm.tsx
 import { useState } from 'react';
+import { submitContact } from '../services/contactService';
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -24,14 +25,12 @@ export default function ContactForm() {
     setError('');
     setSuccess(false);
 
-    // Simulation d'envoi (remplace par ton API réelle)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // mock API
-      console.log('Contact form submitted:', formData);
+      await submitContact(formData);
       setSuccess(true);
       setFormData({ name: '', email: '', subject: '', message: '' });
-    } catch (err) {
-      setError('Une erreur est survenue. Veuillez réessayer.');
+    } catch (err: any) {
+      setError(err.message || 'Une erreur est survenue. Veuillez réessayer.');
     } finally {
       setIsSubmitting(false);
     }
