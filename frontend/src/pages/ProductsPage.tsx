@@ -5,8 +5,9 @@ import { useState, useEffect, useContext } from 'react';
 import type { UserRole, CurrentPage } from '../../App';
 import { CartContext } from '../../App';
 import { fetchProducts, ApiProduct } from '../services/api';
+import { getProducts } from '../services/productService';
 import { Button } from '../components/ui/button';
-import { RefreshCw, Grid3x3, List, SlidersHorizontal, TrendingUp, Sparkles } from 'lucide-react';
+import { RefreshCw, Grid3x3, List, SlidersHorizontal, TrendingUp, Sparkles, Database } from 'lucide-react';
 
 interface ProductsPageProps {
   isLoggedIn: boolean;
@@ -21,9 +22,11 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
   const [selectedCategory] = useState('all');
   // useState hook - manages component state
   const [apiProducts, setApiProducts] = useState<ApiProduct[]>([]);
+  const [backendProducts, setBackendProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useApiData, setUseApiData] = useState(false);
+  const [useBackendData, setUseBackendData] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'rating'>('default');
   const [showFilters, setShowFilters] = useState(false);
@@ -36,8 +39,10 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
   useEffect(() => {
     if (useApiData) {
       loadProducts();
+    } else if (useBackendData) {
+      loadBackendProducts();
     }
-  }, [useApiData]);
+  }, [useApiData, useBackendData]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -53,11 +58,36 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
     }
   };
 
+  const loadBackendProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getProducts();
+      setBackendProducts(data);
+    } catch (err: any) {
+      setError(err.message || 'Échec du chargement des produits depuis le backend');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Button functionality - toggle between mock and API data with animation
   const toggleDataSource = () => {
     setRefreshing(true);
     setTimeout(() => {
       setUseApiData(!useApiData);
+      if (useApiData) setUseBackendData(false);
+      setRefreshing(false);
+    }, 500);
+  };
+
+  // Button functionality - toggle backend data
+  const toggleBackendData = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setUseBackendData(!useBackendData);
+      if (useBackendData) setUseApiData(false);
       setRefreshing(false);
     }, 500);
   };
@@ -105,7 +135,11 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
     }
   };
   
-  const displayProducts = useApiData ? sortProducts(apiProducts) : sortProducts(filteredProducts);
+  const displayProducts = useBackendData 
+    ? sortProducts(backendProducts)
+    : useApiData 
+      ? sortProducts(apiProducts) 
+      : sortProducts(filteredProducts);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -161,6 +195,20 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
             </Button>
             
             <Button 
+              onClick={toggleBackendData}
+              variant="outline"
+              size="sm"
+              className={`gap-2 transition-all duration-300 ${
+                refreshing ? 'animate-pulse' : ''
+              } ${useBackendData ? 'bg-blue-100 text-blue-700 border-blue-300' : ''}`}
+            >
+              <Database className={`w-4 h-4 transition-transform duration-500 ${
+                refreshing ? 'animate-spin' : ''
+              }`} />
+              {useBackendData ? 'Backend DB' : 'Backend'}
+            </Button>
+            
+            <Button 
               onClick={toggleDataSource}
               variant="outline"
               size="sm"
@@ -171,7 +219,7 @@ export default function ProductsPage({ isLoggedIn, userRole, userName, onLogin, 
               <RefreshCw className={`w-4 h-4 transition-transform duration-500 ${
                 refreshing ? 'animate-spin' : ''
               }`} />
-              {useApiData ? 'Données API' : 'Données locales'}
+              {useApiData ? 'Données API' : 'Fake Store API'}
             </Button>
           </div>
         </div>

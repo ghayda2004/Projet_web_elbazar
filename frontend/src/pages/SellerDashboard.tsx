@@ -3,9 +3,12 @@ import { StatCard } from '../components/StatCard';
 import { Button } from '../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
-import { BarChart3, Package, Star, DollarSign, Plus, Pencil, Trash2 } from 'lucide-react';
-import { sellerStats, sellerProducts } from '../data/mockData';
+import { BarChart3, Package, Star, Plus, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { ProductForm } from '../components/ProductForm';
 import type { CurrentPage } from '../../App';
+import { useState, useEffect } from 'react';
+import { getSellerProducts, deleteProduct } from '../services/productService';
+import { getSellerOrders } from '../services/orderService';
 
 interface SellerDashboardProps {
   userName?: string;
@@ -14,6 +17,64 @@ interface SellerDashboardProps {
 }
 
 export default function SellerDashboard({ userName, onLogout, onNavigate }: SellerDashboardProps) {
+  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [productsData, ordersData] = await Promise.all([
+        getSellerProducts(),
+        getSellerOrders()
+      ]);
+      setProducts(productsData);
+      setOrders(ordersData);
+    } catch (err: any) {
+      setError(err.message || 'Erreur de chargement des données');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddProduct = () => {
+    setEditingProduct(null);
+    setShowProductForm(true);
+  };
+
+  const handleEditProduct = (product: any) => {
+    setEditingProduct(product);
+    setShowProductForm(true);
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) return;
+
+    try {
+      await deleteProduct(productId);
+      await loadData(); // Reload data
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors de la suppression');
+    }
+  };
+
+  const handleFormSuccess = () => {
+    loadData();
+  };
+
+  // Calculate stats
+  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const totalOrders = orders.length;
+  const activeProducts = products.length;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header 
@@ -33,31 +94,41 @@ export default function SellerDashboard({ userName, onLogout, onNavigate }: Sell
               <h1 className="text-gray-900">Elbazare Seller</h1>
             </div>
           </div>
+          <Button onClick={loadData} variant="outline" size="sm" className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Actualiser
+          </Button>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+            {error}
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Revenu total"
-            value={`$${sellerStats.totalRevenue.toLocaleString()}`}
+            value={`$${totalRevenue.toLocaleString()}`}
             icon={BarChart3}
             iconColor="bg-purple-100 text-purple-600"
           />
           <StatCard
             title="Total des commandes"
-            value={sellerStats.totalOrders}
+            value={totalOrders}
             icon={Package}
             iconColor="bg-blue-100 text-blue-600"
           />
           <StatCard
             title="Produits actifs"
-            value={sellerStats.activeProducts}
+            value={activeProducts}
             icon={Package}
             iconColor="bg-green-100 text-green-600"
           />
           <StatCard
             title="Note de la boutique"
-            value={`${sellerStats.storeRating}⭐`}
+            value={`4.8⭐`}
             icon={Star}
             iconColor="bg-yellow-100 text-yellow-600"
           />
@@ -67,67 +138,89 @@ export default function SellerDashboard({ userName, onLogout, onNavigate }: Sell
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="p-6 border-b border-gray-200 flex items-center justify-between">
             <h2 className="text-gray-900">Mes produits</h2>
-            <Button className="gap-2 bg-slate-700 hover:bg-slate-800">
+            <Button onClick={handleAddProduct} className="gap-2 bg-slate-700 hover:bg-slate-800">
               <Plus className="w-4 h-4" />
               Ajouter un produit
             </Button>
           </div>
           
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produit</TableHead>
-                <TableHead>Catégorie</TableHead>
-                <TableHead>Prix</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Commandes</TableHead>
-                <TableHead>Revenu</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sellerProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-                        <span className="text-xl">{product.emoji}</span>
-                      </div>
-                      <span>{product.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{product.category}</Badge>
-                  </TableCell>
-                  <TableCell>${product.price}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="secondary"
-                      className="bg-green-100 text-green-700 hover:bg-green-100"
-                    >
-                      {product.stock}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{product.orders}</TableCell>
-                  <TableCell className="text-green-600">
-                    ${product.revenue.toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <Pencil className="w-4 h-4 text-blue-600" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">
+              <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" />
+              Chargement...
+            </div>
+          ) : products.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              Aucun produit. Cliquez sur "Ajouter un produit" pour commencer.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Produit</TableHead>
+                  <TableHead>Catégorie</TableHead>
+                  <TableHead>Prix</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                          <span className="text-xl">{product.emoji || '📦'}</span>
+                        </div>
+                        <span>{product.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{product.category}</Badge>
+                    </TableCell>
+                    <TableCell>${product.price}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="secondary"
+                        className="bg-green-100 text-green-700 hover:bg-green-100"
+                      >
+                        {product.stock}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleEditProduct(product)}
+                        >
+                          <Pencil className="w-4 h-4 text-blue-600" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
+
+      <ProductForm
+        open={showProductForm}
+        onClose={() => setShowProductForm(false)}
+        onSuccess={handleFormSuccess}
+        product={editingProduct}
+      />
     </div>
   );
 }
