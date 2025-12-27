@@ -1,7 +1,7 @@
 # Projet Web El Bazar
 
-Bienvenue dans le projet **El Bazar**, une application e-commerce moderne et complètement fonctionnelle pour le marché francophone.
-
+Elbazar est un site  e-commerce moderne développée avec React et Vite, conçue pour connecter les clients et les vendeurs locaux au sein d’un même espace digital.
+L’objectif du site est de mettre en avant les petits commerces et leurs produits, tout en offrant une expérience fluide, rapide et intuitive aux utilisateurs.
 ## Présentation
 
 Ce projet fournit une plateforme e-commerce complète avec authentification, gestion de produits, panier d'achats, et interface vendeur. L'interface est inspirée d'une maquette Figma : [E-commerce Website in French](https://www.figma.com/design/3CZcm12kmDnywxWpb1fBV5/E-commerce-Website-in-French).
